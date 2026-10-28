@@ -269,7 +269,7 @@ def batch_build(chat_id, n):
     send(chat_id, f"爸爸，批量完成：{ok}/{len(items)} 本成功。")
 
 
-def auto_crawl(limit=5):
+def auto_crawl(limit=3):
     # 定時爬蟲：抓第一頁扶他本，只推沒推過的
     h = http_get(f"{BASE}/search?q=futanari&page=1")
     res = parse_search(h)[:limit]
@@ -410,13 +410,38 @@ def home():
     return "nh bot ok", 200
 
 
+@app.route("/ping", methods=["GET"])
+def ping():
+    # 給 cron 叫醒用：不爬東西，秒回
+    return {"ok": True, "pong": True, "base": BASE}, 200
+
+
 @app.route("/auto", methods=["GET"])
 def auto_endpoint():
+    # 定時爬蟲入口：key 不對才擋；內部出錯也回 200，避免 cron 誤判失敗
+    t0 = time.time()
     key = request.args.get("key", "") if hasattr(request, "args") else ""
     if AUTO_SECRET and key != AUTO_SECRET:
-        return {"error": "forbidden"}, 403
-    made = auto_crawl()
-    return {"ok": True, "pushed": len(made)}, 200
+        return {"ok": False, "error": "forbidden",
+                "hint": "key 跟 AUTO_SECRET 不一致"}, 403
+    # 可選參數：limit=1~5（預設 3，跑得快）、bg=1（立刻回 200，背景再爬）
+    try:
+        limit = int(request.args.get("limit", "3") or "3")
+    except Exception:
+        limit = 3
+    limit = max(1, min(limit, 5))
+    bg = (request.args.get("bg", "") or "") in ("1", "true", "yes")
+    try:
+        if bg:
+            threading.Thread(target=auto_crawl, args=(limit,), daemon=True).start()
+            return {"ok": True, "queued": True, "limit": limit, "seconds": 0.0}, 200
+        made = auto_crawl(limit)
+        return {"ok": True, "pushed": len(made), "items": made, "limit": limit,
+                "seconds": round(time.time() - t0, 1)}, 200
+    except Exception as e:
+        logging.info("AUTO FAIL %s", e)
+        return {"ok": False, "error": str(e)[:200],
+                "seconds": round(time.time() - t0, 1)}, 200
 
 
 @app.route("/test", methods=["GET"])

@@ -108,14 +108,45 @@ TELEGRAPH_TOKEN= 選填，不填會自動建立一個 Telegraph 帳號
    AUTO_SECRET   = 自己訂一串
    OWNER_CHAT_ID = 那串數字
    ```
-3. `cron-job.org` 免費註冊 → 建排程：
-   ```
-   URL：https://你的服務.onrender.com/auto?key=你的AUTO_SECRET
-   頻率：每天一次
-   ```
+3. `cron-job.org` 免費註冊 → 建**兩個**排程（重要）：
+
+```
+Job 1（叫醒，防冷啟動逾時）
+URL：https://你的服務.onrender.com/ping
+頻率：每 10 分鐘
+Timeout：30 秒
+
+Job 2（真正爬）
+URL：https://你的服務.onrender.com/auto?key=你的AUTO_SECRET&limit=3
+頻率：每天一次
+Timeout：30 秒
+```
+
 4. 之後每天自動爬第一頁、只推沒推過的新本，不重複洗版
 
+### /auto 參數
+
+```
+limit=1~5   → 這次爬幾本（預設 3，2 本約 6 秒、5 本約 13 秒）
+bg=1        → 立刻回 200，背景再爬（cron 逾時救星）
+```
+
+### cron 一直 fail 的排錯順序
+
+```
+1. 瀏覽器直接打開 /auto?key=... 看回什麼
+   {"error":"forbidden"} → key 跟 AUTO_SECRET 不一致
+   {"ok":true,...}       → 其實成功，是 cron 逾時誤判
+   404                   → 網址多打了 /nh 或服務名打錯
+   502/503               → Render 睡了或掛了
+
+2. 只建 Job 2 沒建 Job 1 → 每天第一次都撞冷啟動（30~60 秒）→ 必 fail
+3. cron-job.org 的 Timeout 要設 30 秒（預設可能更短）
+4. 想更省事就用 bg=1，回應 0 秒，背景照爬
+```
+
 > Render 重啟後記憶會清空，第一次會重推一批，第二次就恢復正常。
+> Render 免費版每月 750 小時；每 10 分鐘叫醒約 744 小時，剛好在額度內。
 
 ---
 
