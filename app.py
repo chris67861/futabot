@@ -73,7 +73,8 @@ def send(chat_id, text):
 def send_photo(chat_id, url, caption=""):
     try:
         requests.post(f"{API}/sendPhoto",
-                      json={"chat_id": chat_id, "photo": url, "caption": caption[:1000]},
+                      json={"chat_id": chat_id, "photo": url, "caption": caption[:1024],
+                            "parse_mode": "HTML"},
                       timeout=60)
     except Exception as e:
         logging.info("PHOTO FAIL %s", e)
@@ -287,16 +288,20 @@ def auto_crawl(limit=3):
         url = create_page(info["title"] or g["title"], urls)
         LAST_SEEN.add(gid)
         if url:
-            made.append({"id": gid, "title": info["title"] or g["title"], "url": url})
+            made.append({"id": gid, "title": info["title"] or g["title"], "url": url,
+                 "media_id": info["media_id"], "ext": info["ext"]})
     target = OWNER_CHAT_ID or LAST_CHAT_ID
     if target:
-        if made:
-            lines = ["🗂 <b>今日新本</b>\n"]
-            for m in made:
-                lines.append(f"• <a href=\"{m['url']}\">{html.escape(m['title'][:60])}</a>")
-            send(target, "\n".join(lines))
-        else:
-            send(target, "爸爸，今天沒有新本，人家明天再去看。")
+    if made:
+        send(target, f"🗂 <b>今日新本</b>（共 {len(made)} 本）")
+        for m in made:
+            # 用第 1 页原图当封面（和 /圖 命令同一套 URL，保证能拿到）
+            cover = page_url(m["media_id"], 1, m["ext"])
+            caption = f"<a href=\"{m['url']}\">{html.escape(m['title'][:80])}</a>"
+            send_photo(target, cover, caption)
+            time.sleep(1)   # 避免 Telegram 限流
+    else:
+        send(target, "爸爸，今天沒有新本，人家明天再去看。")
     return made
 
 def handle(chat_id, text):
