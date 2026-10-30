@@ -1,1 +1,0 @@
-gunicorn nh_bot:app --timeout 600
