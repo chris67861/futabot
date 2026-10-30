@@ -292,15 +292,15 @@ def auto_crawl(limit=3):
                  "media_id": info["media_id"], "ext": info["ext"]})
     target = OWNER_CHAT_ID or LAST_CHAT_ID
     if target:
-    if made:
-        send(target, f"🗂 <b>今日新本</b>（共 {len(made)} 本）")
-        for m in made:
+        if made:
+            send(target, f"🗂 <b>今日新本</b>（共 {len(made)} 本）")
+            for m in made:
             # 用第 1 页原图当封面（和 /圖 命令同一套 URL，保证能拿到）
-            cover = page_url(m["media_id"], 1, m["ext"])
-            caption = f"<a href=\"{m['url']}\">{html.escape(m['title'][:80])}</a>"
-            send_photo(target, cover, caption)
-            time.sleep(1)   # 避免 Telegram 限流
-    else:
+                cover = page_url(m["media_id"], 1, m["ext"])
+                caption = f"<a href=\"{m['url']}\">{html.escape(m['title'][:80])}</a>"
+                send_photo(target, cover, caption)
+                time.sleep(1)   # 避免 Telegram 限流
+        else:
         send(target, "爸爸，今天沒有新本，人家明天再去看。")
     return made
 
