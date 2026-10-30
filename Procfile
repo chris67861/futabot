@@ -1,0 +1,1 @@
+web: gunicorn nh_bot:app
