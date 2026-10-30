@@ -1,3 +1,0 @@
-nh_bot.py	
-requirements.txt
-Procfile
