@@ -19,6 +19,9 @@ from flask import Flask, request
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
 
+TELEGRAM_TOKEN   = os.environ.get("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+  
 TOKEN = os.environ.get("NH_BOT_TOKEN", "")
 BASE = os.environ.get("NH_BASE", "https://nhentai.to").rstrip("/")
 API = f"https://api.telegram.org/bot{TOKEN}"
@@ -268,9 +271,7 @@ def batch_build(chat_id, n):
         time.sleep(3)
     send(chat_id, f"爸爸，批量完成：{ok}/{len(items)} 本成功。")
 
-
 def auto_crawl(limit=3):
-    # 定時爬蟲：抓第一頁扶他本，只推沒推過的
     h = http_get(f"{BASE}/search?q=futanari&page=1")
     res = parse_search(h)[:limit]
     made = []
@@ -297,7 +298,6 @@ def auto_crawl(limit=3):
         else:
             send(target, "爸爸，今天沒有新本，人家明天再去看。")
     return made
-
 
 def handle(chat_id, text):
     global LAST_CHAT_ID
