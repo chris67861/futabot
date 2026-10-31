@@ -356,13 +356,13 @@ def handle(chat_id, text):
         return
 
     if t.startswith("/最新") or low.startswith("/new"):
-    tail = t[3:].strip()
-    page = int(tail) if tail.isdigit() else 1
-    if page == 1:
-        do_list(chat_id, "/", "最新上架（全站）", 1)
-    else:
-        do_list(chat_id, f"/search?q=futanari&sort=new&page={page}", "最新上架（全站）", page)
-    return
+        tail = t[3:].strip()
+        page = int(tail) if tail.isdigit() else 1
+        if page == 1:
+            do_list(chat_id, "/", "最新上架（全站）", 1)
+        else:
+            do_list(chat_id, f"/search?q=futanari&sort=new&page={page}", "最新上架（全站）", page)
+        return
 
     if t.startswith("/我的id") or low.startswith("/myid"):
         send(chat_id, f"爸爸的 chat id：<code>{chat_id}</code>\n"
