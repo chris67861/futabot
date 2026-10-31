@@ -273,8 +273,19 @@ def batch_build(chat_id, n):
     send(chat_id, f"爸爸，批量完成：{ok}/{len(items)} 本成功。")
 
 def auto_crawl(limit=3):
-    h = http_get(f"{BASE}/search?q=futanari&page=1")
-    res = parse_search(h)[:limit]
+    # AUTO_MODE=all（預設）爬首頁全站最新；AUTO_MODE=futanari 只爬扶他
+    mode = os.environ.get("AUTO_MODE", "all").strip().lower()
+    if mode == "futanari":
+        crawl_urls = [f"{BASE}/search?q=futanari&sort=new&page=1"]
+    else:
+        # 首頁就是全站最新；萬一鏡像首頁結構不同，退回搜尋頁
+        crawl_urls = [f"{BASE}/", f"{BASE}/search?q=futanari&sort=new&page=1"]
+    res = []
+    for u in crawl_urls:
+        res = parse_search(http_get(u))
+        if res:
+            break
+    res = res[:limit]
     made = []
     for g in res:
         gid = str(g["id"])
@@ -345,10 +356,13 @@ def handle(chat_id, text):
         return
 
     if t.startswith("/最新") or low.startswith("/new"):
-        tail = t[3:].strip()
-        page = int(tail) if tail.isdigit() else 1
-        do_list(chat_id, f"/search?q=futanari&sort=new&page={page}", "最新扶他本", page)
-        return
+    tail = t[3:].strip()
+    page = int(tail) if tail.isdigit() else 1
+    if page == 1:
+        do_list(chat_id, "/", "最新上架（全站）", 1)
+    else:
+        do_list(chat_id, f"/search?q=futanari&sort=new&page={page}", "最新上架（全站）", page)
+    return
 
     if t.startswith("/我的id") or low.startswith("/myid"):
         send(chat_id, f"爸爸的 chat id：<code>{chat_id}</code>\n"
